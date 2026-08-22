@@ -186,6 +186,8 @@ class ClientTest extends TestCase
     public function testSendWithMockHttpRequestSuccess(): void
     {
         $reqMock = new class {
+            public array $headers = [];
+            public function setHeader($name, $value) { $this->headers[$name] = $value; }
             public function execute() {
                 return new class {
                     public function isOK() { return true; }
@@ -212,11 +214,14 @@ class ClientTest extends TestCase
 
         $res = $client->send($payload);
         $this->assertSame(['id' => 'msg_test123'], $res);
+        $this->assertSame('application/json', $reqMock->headers['Content-Type']);
+        $this->assertSame('application/json, application/problem+json', $reqMock->headers['Accept']);
     }
 
     public function testSendWithProblemDetailsError(): void
     {
         $reqMock = new class {
+            public function setHeader($name, $value) {}
             public function execute() {
                 return new class {
                     public function isOK() { return false; }
@@ -338,6 +343,7 @@ EOM;
     public function testSendRejectsNon200Response(): void
     {
         $reqMock = new class {
+            public function setHeader($name, $value) {}
             public function execute() {
                 return new class {
                     public function isOK() { return true; }
@@ -370,6 +376,7 @@ EOM;
     public function testSendRejectsMalformedJsonOrMissingId(): void
     {
         $reqMock = new class {
+            public function setHeader($name, $value) {}
             public function execute() {
                 return new class {
                     public function isOK() { return true; }

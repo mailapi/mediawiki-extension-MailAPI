@@ -16,7 +16,7 @@ class HooksTest extends TestCase
         $wgMailAPIEndpoint = null;
     }
 
-    public function testOnAlternateUserMailerWithoutEndpointReturnsErrorMessage(): void
+    public function testOnAlternateUserMailerWithoutEndpointFallsBackToDefaultMailer(): void
     {
         global $wgMailAPIEndpoint;
         $wgMailAPIEndpoint = '';
@@ -30,7 +30,6 @@ class HooksTest extends TestCase
             'Body'
         );
 
-        $this->assertIsString($ret);
-        $this->assertSame('Please set $wgMailAPIEndpoint in LocalSettings.php.', $ret);
+        $this->assertTrue($ret);
     }
 }

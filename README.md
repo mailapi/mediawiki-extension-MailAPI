@@ -66,7 +66,7 @@ $wgMailAPIEndpoint = 'http://localhost:8080'; // or 'http://localhost:8080/v1/me
    - `replyTo` / `cc` / `bcc`: `[ { "email": "...", ... } ]` (extracted from headers if present)
    - `headers`: `[ { "name": "...", "value": "..." } ]` (supplemental headers)
 3. **HTTP Dispatch**: Sends an HTTP `POST` request with `Content-Type: application/json` to `/v1/messages`.
-4. **Result Handling**: On success (HTTP 200), skips MediaWiki's default mail transport. On failure, parses RFC 9457 problem details and throws an `MWException`.
+4. **Result Handling**: On success (HTTP 200), skips MediaWiki's default mail transport and logs the Mail API message ID. On failure, logs the RFC 9457 problem details and falls back to MediaWiki's default mail transport.
 
 ## Testing
 

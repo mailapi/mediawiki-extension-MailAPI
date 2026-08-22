@@ -4,11 +4,23 @@ namespace MediaWiki\Extension\MailAPI;
 
 use MailAddress;
 use MediaWiki\Hook\AlternateUserMailerHook;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use Throwable;
 
 class Hooks implements AlternateUserMailerHook
 {
+    /** @var object|null */
+    private $logger;
+
+    /**
+     * @param object|null $logger
+     */
+    public function __construct($logger = null)
+    {
+        $this->logger = $logger;
+    }
+
     /**
      * Send MediaWiki mail through Mail API.
      *
@@ -17,7 +29,8 @@ class Hooks implements AlternateUserMailerHook
      * @param MailAddress $from
      * @param string $subject
      * @param string|array $body
-     * @return bool|string False on success (skips default mailer), error string on failure
+     * @return bool False on success (skips the default mailer), true on failure to
+     *   allow the default mailer to handle the message.
      */
     public function onAlternateUserMailer($headers, $to, $from, $subject, $body)
     {
@@ -32,17 +45,54 @@ class Hooks implements AlternateUserMailerHook
         }
 
         if ($endpoint === '') {
-            return 'Please set $wgMailAPIEndpoint in LocalSettings.php.';
+            $this->log(
+                'error',
+                'MailAPI endpoint is not configured; falling back to the default mailer.'
+            );
+            return true;
         }
 
         try {
             $client = new Client($endpoint);
             $payload = $client->buildPayload($headers, $to, $from, $subject, $body);
-            $client->send($payload);
+            $response = $client->send($payload);
+            $this->log(
+                'info',
+                'MailAPI accepted email for delivery. Message ID: {message_id}',
+                ['message_id' => $response['id'] ?? '(missing)']
+            );
 
             return false;
         } catch (Throwable $e) {
-            return $e->getMessage();
+            $this->log(
+                'error',
+                'MailAPI failed to send email; falling back to the default mailer: {error}',
+                [
+                    'error' => $e->getMessage(),
+                    'exception' => $e,
+                ]
+            );
+            return true;
+        }
+    }
+
+    /**
+     * Log a MailAPI event when MediaWiki's logger is available.
+     *
+     * The standalone test suite does not bootstrap MediaWiki's logging services.
+     *
+     * @param string $level
+     * @param string $message
+     * @param array $context
+     */
+    private function log($level, $message, array $context = []): void
+    {
+        if ($this->logger === null && class_exists(LoggerFactory::class)) {
+            $this->logger = LoggerFactory::getInstance('mailapi');
+        }
+
+        if ($this->logger !== null) {
+            $this->logger->$level($message, $context);
         }
     }
 }
