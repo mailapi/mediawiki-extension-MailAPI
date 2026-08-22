@@ -1,0 +1,32 @@
+{
+	"name": "MailAPI",
+	"version": "0.1.0",
+	"author": [
+		"jmnote"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:MailAPI",
+	"description": "Sends MediaWiki user email through Mail API.",
+	"license-name": "Apache-2.0",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.43.0"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\MailAPI\\": "includes/"
+	},
+	"HookHandlers": {
+		"MailAPIHooks": {
+			"class": "MediaWiki\\Extension\\MailAPI\\Hooks"
+		}
+	},
+	"Hooks": {
+		"AlternateUserMailer": "MailAPIHooks"
+	},
+	"config": {
+		"MailAPIEndpoint": {
+			"value": "",
+			"description": "The base URL or endpoint of the Mail API service (e.g. http://localhost:8080 or http://localhost:8080/v1/messages)"
+		}
+	},
+	"manifest_version": 2
+}
