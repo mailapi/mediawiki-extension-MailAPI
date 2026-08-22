@@ -480,14 +480,12 @@ class Client
                 [
                     'method' => 'POST',
                     'postData' => $json,
-                    'headers' => [
-                        'Content-Type' => 'application/json',
-                        'Accept' => 'application/json, application/problem+json',
-                    ],
                     'timeout' => 30,
                 ],
                 __METHOD__
             );
+            $req->setHeader('Content-Type', 'application/json');
+            $req->setHeader('Accept', 'application/json, application/problem+json');
 
             $status = $req->execute();
             $statusCode = (int)$req->getStatus();

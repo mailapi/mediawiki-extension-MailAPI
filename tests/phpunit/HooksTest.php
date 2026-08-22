@@ -5,6 +5,7 @@ namespace MediaWiki\Extension\MailAPI\Tests;
 use MailAddress;
 use MediaWiki\Extension\MailAPI\Hooks;
 use MWException;
+use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
 
 class HooksTest extends TestCase
@@ -16,12 +17,12 @@ class HooksTest extends TestCase
         $wgMailAPIEndpoint = null;
     }
 
-    public function testOnAlternateUserMailerWithoutEndpointReturnsErrorMessage(): void
+    public function testOnAlternateUserMailerWithoutEndpointFallsBackToDefaultMailer(): void
     {
         global $wgMailAPIEndpoint;
         $wgMailAPIEndpoint = '';
 
-        $hooks = new Hooks();
+        $hooks = new Hooks(new NullLogger());
         $ret = $hooks->onAlternateUserMailer(
             [],
             new MailAddress('to@example.com'),
@@ -30,7 +31,6 @@ class HooksTest extends TestCase
             'Body'
         );
 
-        $this->assertIsString($ret);
-        $this->assertSame('Please set $wgMailAPIEndpoint in LocalSettings.php.', $ret);
+        $this->assertTrue($ret);
     }
 }

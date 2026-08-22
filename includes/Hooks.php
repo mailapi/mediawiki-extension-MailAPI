@@ -4,11 +4,20 @@ namespace MediaWiki\Extension\MailAPI;
 
 use MailAddress;
 use MediaWiki\Hook\AlternateUserMailerHook;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 class Hooks implements AlternateUserMailerHook
 {
+    private ?LoggerInterface $logger;
+
+    public function __construct(?LoggerInterface $logger = null)
+    {
+        $this->logger = $logger;
+    }
+
     /**
      * Send MediaWiki mail through Mail API.
      *
@@ -17,7 +26,8 @@ class Hooks implements AlternateUserMailerHook
      * @param MailAddress $from
      * @param string $subject
      * @param string|array $body
-     * @return bool|string False on success (skips default mailer), error string on failure
+     * @return bool False on success (skips the default mailer), true on failure to
+     *   allow the default mailer to handle the message.
      */
     public function onAlternateUserMailer($headers, $to, $from, $subject, $body)
     {
@@ -32,17 +42,36 @@ class Hooks implements AlternateUserMailerHook
         }
 
         if ($endpoint === '') {
-            return 'Please set $wgMailAPIEndpoint in LocalSettings.php.';
+            $this->getLogger()->error(
+                'MailAPI endpoint is not configured; falling back to the default mailer.'
+            );
+            return true;
         }
 
         try {
             $client = new Client($endpoint);
             $payload = $client->buildPayload($headers, $to, $from, $subject, $body);
-            $client->send($payload);
+            $response = $client->send($payload);
+            $this->getLogger()->info(
+                'MailAPI accepted email for delivery. Message ID: {message_id}',
+                ['message_id' => $response['id'] ?? '(missing)']
+            );
 
             return false;
         } catch (Throwable $e) {
-            return $e->getMessage();
+            $this->getLogger()->error(
+                'MailAPI failed to send email; falling back to the default mailer: {error}',
+                [
+                    'error' => $e->getMessage(),
+                    'exception' => $e,
+                ]
+            );
+            return true;
         }
+    }
+
+    private function getLogger(): LoggerInterface
+    {
+        return $this->logger ?? LoggerFactory::getInstance('mailapi');
     }
 }
