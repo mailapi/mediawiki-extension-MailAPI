@@ -17,7 +17,7 @@ Note: Extension:MailAPI targets MediaWiki `1.43+`.
 
 ```bash
 cd /path/to/mediawiki/extensions
-git clone --depth 1 https://github.com/jmnote/MailAPI.git
+git clone --depth 1 https://github.com/mailapi/mediawiki-extensions-MailAPI.git
 ```
 
 2. (Optional) If using Composer merge loading, update `composer.local.json`:
