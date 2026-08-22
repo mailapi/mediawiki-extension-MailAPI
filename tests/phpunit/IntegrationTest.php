@@ -144,7 +144,7 @@ PHP;
         $this->assertFalse($ret);
     }
 
-    public function testHooksErrorReturnsString(): void
+    public function testHooksErrorFallsBackToDefaultMailer(): void
     {
         global $wgMailAPIEndpoint;
         $wgMailAPIEndpoint = 'http://127.0.0.1:' . self::$serverPort . '/nonexistent';
@@ -158,8 +158,7 @@ PHP;
             'Hello from Hook'
         );
 
-        // On failure, it returns an error string rather than throwing MWException
-        $this->assertIsString($ret);
-        $this->assertStringContainsString('Mail API error', $ret);
+        // On failure, it allows MediaWiki's default mailer to handle the message.
+        $this->assertTrue($ret);
     }
 }

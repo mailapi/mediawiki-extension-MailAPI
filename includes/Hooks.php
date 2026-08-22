@@ -6,14 +6,17 @@ use MailAddress;
 use MediaWiki\Hook\AlternateUserMailerHook;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 class Hooks implements AlternateUserMailerHook
 {
-    private ?LoggerInterface $logger;
+    /** @var object|null */
+    private $logger;
 
-    public function __construct(?LoggerInterface $logger = null)
+    /**
+     * @param object|null $logger
+     */
+    public function __construct($logger = null)
     {
         $this->logger = $logger;
     }
@@ -42,7 +45,8 @@ class Hooks implements AlternateUserMailerHook
         }
 
         if ($endpoint === '') {
-            $this->getLogger()->error(
+            $this->log(
+                'error',
                 'MailAPI endpoint is not configured; falling back to the default mailer.'
             );
             return true;
@@ -52,14 +56,16 @@ class Hooks implements AlternateUserMailerHook
             $client = new Client($endpoint);
             $payload = $client->buildPayload($headers, $to, $from, $subject, $body);
             $response = $client->send($payload);
-            $this->getLogger()->info(
+            $this->log(
+                'info',
                 'MailAPI accepted email for delivery. Message ID: {message_id}',
                 ['message_id' => $response['id'] ?? '(missing)']
             );
 
             return false;
         } catch (Throwable $e) {
-            $this->getLogger()->error(
+            $this->log(
+                'error',
                 'MailAPI failed to send email; falling back to the default mailer: {error}',
                 [
                     'error' => $e->getMessage(),
@@ -70,8 +76,23 @@ class Hooks implements AlternateUserMailerHook
         }
     }
 
-    private function getLogger(): LoggerInterface
+    /**
+     * Log a MailAPI event when MediaWiki's logger is available.
+     *
+     * The standalone test suite does not bootstrap MediaWiki's logging services.
+     *
+     * @param string $level
+     * @param string $message
+     * @param array $context
+     */
+    private function log($level, $message, array $context = []): void
     {
-        return $this->logger ?? LoggerFactory::getInstance('mailapi');
+        if ($this->logger === null && class_exists(LoggerFactory::class)) {
+            $this->logger = LoggerFactory::getInstance('mailapi');
+        }
+
+        if ($this->logger !== null) {
+            $this->logger->$level($message, $context);
+        }
     }
 }

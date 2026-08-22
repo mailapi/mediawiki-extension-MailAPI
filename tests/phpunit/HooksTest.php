@@ -5,7 +5,6 @@ namespace MediaWiki\Extension\MailAPI\Tests;
 use MailAddress;
 use MediaWiki\Extension\MailAPI\Hooks;
 use MWException;
-use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
 
 class HooksTest extends TestCase
@@ -22,7 +21,7 @@ class HooksTest extends TestCase
         global $wgMailAPIEndpoint;
         $wgMailAPIEndpoint = '';
 
-        $hooks = new Hooks(new NullLogger());
+        $hooks = new Hooks();
         $ret = $hooks->onAlternateUserMailer(
             [],
             new MailAddress('to@example.com'),
